@@ -246,3 +246,10 @@ auth.toml
 
 # VSCode
 .vscode
+
+# Docker
+.docker/
+
+# Dataset
+data/EXE101/
+data/processed
