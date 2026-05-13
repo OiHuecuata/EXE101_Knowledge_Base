@@ -22,23 +22,17 @@ class MarkdownParser:
         url_pattern = r'(https?://[^\s<>"]+|www\.[^\s<>"]+)'
         text = re.sub(url_pattern, r'<\1>', text)
         
-        # MD009: Đảm bảo 2 spaces cho line break, tránh lỗi "Actual: 1"
+        # MD009
         return text.strip() + "  "
 
     def handle_ordered_list(self, text):
-        """
-        Phát hiện và đánh số lại danh sách tăng dần (MD029)
-        """
-        # Kiểm tra xem dòng có phải là danh sách số không (ví dụ: 1. hoặc 1))
         match = re.match(r'^\s*\d+[.)]\s+(.*)', text)
         
         if match:
             self.list_counter += 1
             content = match.group(1)
-            # Trả về số thứ tự đã được format tăng dần
             return f"{self.list_counter}. {content}"
         else:
-            # Nếu không phải danh sách, reset bộ đếm
             self.list_counter = 0
             return text
 
@@ -106,7 +100,7 @@ def main():
 
             output_file = PROCESSED_DATA_DIR / f"{file_path.stem}.md"
             with open(output_file, "w", encoding="utf-8") as f:
-                # Xử lý MD010 & MD032 cuối cùng
+                # Resolve MD010 & MD032
                 content = content.replace('\t', '    ')
                 sanitized = re.sub(r'\n{3,}', '\n\n', content)
                 
