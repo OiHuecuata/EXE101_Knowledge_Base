@@ -216,3 +216,33 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Go binaries
+src/backend/main
+src/backend/backend
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test coverage
+*.out
+
+# Vector Database (Chroma/Qdrant)
+database/
+*.db
+*.sqlite3
+
+# Unstructured & PDF processing
+.msg_cache/
+.re_cache/
+
+# LangGraph checkpoints
+*.checkpoint
+
+# Poetry
+auth.toml
+
+# VSCode
+.vscode
