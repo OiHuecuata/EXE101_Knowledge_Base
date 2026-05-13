@@ -7,64 +7,88 @@ from docx import Document
 RAW_DATA_DIR = pathlib.Path("./data/EXE101")
 PROCESSED_DATA_DIR = pathlib.Path("./data/processed")
 
-def clean_text(text):
-    if not text:
-        return ""
-    
-    # MD034: Fix bare URLs by wrapping them in angle brackets
-    url_pattern = r'(https?://[^\s<>"]+|www\.[^\s<>"]+)'
-    text = re.sub(url_pattern, r'<\1>', text)
-    
-    # MD009: Trailing spaces
-    return text.strip()
+class MarkdownParser:
+    def __init__(self):
+        self.list_counter = 0
 
-def pptx_parser(file_path):
-    try:
-        prs = Presentation(file_path)
-        md_output = [f"# {file_path.stem}  "] # MD009
+    def clean_and_format(self, text):
+        if not text:
+            return ""
         
-        for i, slide in enumerate(prs.slides):
-            md_output.append(f"\n## Slide {i+1}  \n")
-            
-            slide_text = []
-            for shape in slide.shapes:
-                if hasattr(shape, "text") and shape.text.strip():
-                    cleaned = clean_text(shape.text)
-                    
-                    # MD032: List not surrounded by blank space
-                    if cleaned.lstrip().startswith(('*', '-', '+', '1.')):
-                        slide_text.append(f"\n{cleaned}\n")
-                    else:
-                        slide_text.append(cleaned)
-            
-            if slide_text:
-                md_output.append("\n\n".join(slide_text))
-            
-            md_output.append("\n\n---\n")
-            
-        return "\n".join(md_output)
-    except Exception as e:
-        return f"Error parsing PPTX {file_path.name}: {e}"
+        # MD010: Fix Hard Tabs
+        text = text.replace('\t', '    ')
+        
+        # MD034: Fix Bare URLs
+        url_pattern = r'(https?://[^\s<>"]+|www\.[^\s<>"]+)'
+        text = re.sub(url_pattern, r'<\1>', text)
+        
+        # MD009: Đảm bảo 2 spaces cho line break, tránh lỗi "Actual: 1"
+        return text.strip() + "  "
 
-def docx_parser(file_path):
-    try:
-        doc = Document(file_path)
-        md_output = [f"# {file_path.stem}  \n"]
+    def handle_ordered_list(self, text):
+        """
+        Phát hiện và đánh số lại danh sách tăng dần (MD029)
+        """
+        # Kiểm tra xem dòng có phải là danh sách số không (ví dụ: 1. hoặc 1))
+        match = re.match(r'^\s*\d+[.)]\s+(.*)', text)
         
-        for para in doc.paragraphs:
-            text = clean_text(para.text)
-            if text.strip():
-                # MD032
-                if text.lstrip().startswith(('*', '-', '+', '1.')):
-                    md_output.append(f"\n{text}\n")
-                else:
-                    md_output.append(text + "\n")
+        if match:
+            self.list_counter += 1
+            content = match.group(1)
+            # Trả về số thứ tự đã được format tăng dần
+            return f"{self.list_counter}. {content}"
+        else:
+            # Nếu không phải danh sách, reset bộ đếm
+            self.list_counter = 0
+            return text
+
+    def parse_pptx(self, file_path):
+        try:
+            prs = Presentation(file_path)
+            md_output = [f"# {file_path.stem}  "]
+            
+            for i, slide in enumerate(prs.slides):
+                md_output.append(f"\n## Slide {i+1}  \n")
+                self.list_counter = 0 # Reset mỗi slide
                 
-        return "\n".join(md_output)
-    except Exception as e:
-        return f"Error parsing DOCX {file_path.name}: {e}"
+                for shape in slide.shapes:
+                    if hasattr(shape, "text") and shape.text.strip():
+                        cleaned = self.clean_and_format(shape.text)
+                        formatted = self.handle_ordered_list(cleaned)
+                        
+                        # MD032: Blank lines around lists
+                        if formatted.startswith(tuple("123456789")) or formatted.startswith(('*', '-', '+')):
+                            md_output.append(f"\n{formatted}\n")
+                        else:
+                            md_output.append(formatted)
+                
+                md_output.append("\n\n---\n")
+            return "\n".join(md_output)
+        except Exception as e:
+            return f"Error parsing PPTX {file_path.name}: {e}"
+
+    def parse_docx(self, file_path):
+        try:
+            doc = Document(file_path)
+            md_output = [f"# {file_path.stem}  \n"]
+            self.list_counter = 0 
+            
+            for para in doc.paragraphs:
+                if para.text.strip():
+                    cleaned = self.clean_and_format(para.text)
+                    formatted = self.handle_ordered_list(cleaned)
+                    
+                    if formatted.lstrip().startswith(tuple("123456789")) or formatted.lstrip().startswith(('*', '-', '+')):
+                        md_output.append(f"\n{formatted}\n")
+                    else:
+                        md_output.append(formatted + "\n")
+                        
+            return "\n".join(md_output)
+        except Exception as e:
+            return f"Error parsing DOCX {file_path.name}: {e}"
 
 def main():
+    parser = MarkdownParser()
     PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
     file_count = 0
     
@@ -73,25 +97,24 @@ def main():
             file_path = pathlib.Path(root) / file
             suffix = file_path.suffix.lower()
             
-            content = ""
             if suffix == ".pptx":
-                print(f"Converting PPTX: {file}")
-                content = pptx_parser(file_path)
+                content = parser.parse_pptx(file_path)
             elif suffix == ".docx":
-                print(f"Converting DOCX: {file}")
-                content = docx_parser(file_path)
+                content = parser.parse_docx(file_path)
             else:
                 continue
 
             output_file = PROCESSED_DATA_DIR / f"{file_path.stem}.md"
             with open(output_file, "w", encoding="utf-8") as f:
-                sanitized_content = re.sub(r'\n{3,}', '\n\n', content)
-                f.write(sanitized_content.strip())
-                # MD049: No endline characters at the end of file
-                f.write("\n")
+                # Xử lý MD010 & MD032 cuối cùng
+                content = content.replace('\t', '    ')
+                sanitized = re.sub(r'\n{3,}', '\n\n', content)
+                
+                f.write(sanitized.strip())
+                f.write("\n") # MD047
             file_count += 1
 
-    print(f"\nExtracted {file_count} files to {PROCESSED_DATA_DIR}")
+    print(f"Done! Processed {file_count} files.")
 
 if __name__ == "__main__":
     main()
