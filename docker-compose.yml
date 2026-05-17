@@ -2,7 +2,35 @@ version: '3.8'
 
 services:
   #=========================================
-  # DATABASE: PostgreSQL and pgvector
+  # APPLICATION
+  #=========================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: exe101_backend
+    restart: always
+    ports:
+      - "${SERVER_PORT}:8080"
+    environment:
+      - DB_HOST=postgres_db
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=5432
+      - REDIS_HOST=redis_cache
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+    depends_on:
+      - postgres_db
+      - redis_cache
+    networks:
+      - exe101_network
+
+  #=========================================
+  # DATABASE: PostgreSQL & pgvector
   #=========================================
   postgres_db:
     image: pgvector/pgvector:pg16
