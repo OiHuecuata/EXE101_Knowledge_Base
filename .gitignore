@@ -253,3 +253,4 @@ auth.toml
 # Dataset
 data/EXE101/
 data/processed
+data/dataset

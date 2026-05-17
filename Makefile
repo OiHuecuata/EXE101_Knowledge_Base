@@ -14,7 +14,7 @@ packages:
 	poetry install --no-root
 
 tree:
-	tree -I "*.pptx|*.docx"
+	tree -I "EXE101|processed"
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
