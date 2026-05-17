@@ -32,7 +32,7 @@ class Settings(BaseSettings):
 
     # HUGGINGFACE
     HF_TOKEN: str = Field(..., validation_alias="HF_TOKEN")
-    EMBEDDING_MODEL_NAME: str = Field(default="BAAI/bge-m3", validation_alias="EMBEDDING_MODEL_NAME")
+    EMBEDDING_MODEL_NAME: str = Field(default="BAAI/bge-base-en-v1.5", validation_alias="EMBEDDING_MODEL_NAME")
 
     # APP CONFIG
     APP_ENV: str = Field(default="development", validation_alias="APP_ENV")

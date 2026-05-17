@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS document_chunks (
     document_id INT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
     chunk_index INT NOT NULL,
     content TEXT NOT NULL,
-    embedding vector(1024) NOT NULL, -- BAAI/bge-m3
+    embedding vector(768) NOT NULL, -- BAAI/bge-base-en-v1.5
     metadata JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

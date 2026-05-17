@@ -9,6 +9,8 @@ import (
 )
 
 type Config struct {
+
+	// DB Config
 	DBHost     string
 	DBPort     string
 	DBUser     string
@@ -16,20 +18,24 @@ type Config struct {
 	DBName     string
 	DBURL      string
 
+	// Redis Config
 	RedisHost     string
 	RedisPort     string
 	RedisPassword string
 	DBRedis       string
 
+	// API Key
 	OpenRouterAPIKey  string
 	OpenRouterBaseURL string
 	LLMModelName      string
 	LLMTemperature    float64
 	LLMMaxTokens      int
 
+	// HuggingFace
 	HFToken            string
 	EmbeddingModelName string
 
+	// Application
 	AppEnv              string
 	AppPort             string
 	PythonLLMServiceURL string
