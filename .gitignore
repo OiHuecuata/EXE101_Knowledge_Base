@@ -229,8 +229,7 @@ src/backend/backend
 # Go test coverage
 *.out
 
-# Vector Database (Chroma/Qdrant)
-database/
+# Vector Database
 *.db
 *.sqlite3
 
@@ -253,3 +252,4 @@ auth.toml
 # Dataset
 data/EXE101/
 data/processed
+data/dataset
