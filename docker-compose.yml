@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  #=========================================
+  # DATABASE: PostgreSQL and pgvector
+  #=========================================
+  postgres_db:
+    image: pgvector/pgvector:pg16
+    container_name: exe101_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - exe101_network
+
+  #=========================================
+  # CACHE: Redis
+  #=========================================
+  redis_cache:
+    image: redis:7.2-alpine
+    container_name: exe101_redis
+    restart: always
+    ports:
+      - "${REDIS_PORT}:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - exe101_network
+
+#=========================================
+# VOLUMES & NETWORKS CONFIG
+#=========================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  exe101_network:
+    driver: bridge
