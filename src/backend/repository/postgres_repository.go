@@ -50,14 +50,14 @@ func (r *postgresRepository) GetSessions(ctx context.Context) ([]model.ChatSessi
 
 func (r *postgresRepository) CreateMessage(ctx context.Context, message *model.ChatMessage) error {
 	query := `INSERT INTO chat_messages (session_id, role, content, created_at) 
-	          VALUES ($1, $2, $3, $4) RETURNING id`
+              VALUES ($1, $2, $3, $4) RETURNING id`
 	err := r.db.QueryRow(ctx, query, message.SessionID, message.Role, message.Content, message.CreatedAt).Scan(&message.ID)
 	return err
 }
 
 func (r *postgresRepository) GetMessagesBySessionID(ctx context.Context, sessionID uuid.UUID) ([]model.ChatMessage, error) {
 	query := `SELECT id, session_id, role, content, created_at 
-	          FROM chat_messages WHERE session_id = $1 ORDER BY created_at ASC`
+              FROM chat_messages WHERE session_id = $1 ORDER BY created_at ASC`
 	rows, err := r.db.Query(ctx, query, sessionID)
 	if err != nil {
 		return nil, err

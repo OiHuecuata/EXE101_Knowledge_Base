@@ -36,7 +36,7 @@ func NewChatService(cfg *config.Config, pgRepo repository.PostgresRepository, re
 		cfg:        cfg,
 		pgRepo:     pgRepo,
 		redisRepo:  redisRepo,
-		httpClient: &http.Client{Timeout: 5 * time.Minute}, // Timeout dài để giữ kết nối stream với Python
+		httpClient: &http.Client{Timeout: 5 * time.Minute},
 	}
 }
 
@@ -58,7 +58,6 @@ func (s *chatService) GetAllSessions(ctx context.Context) ([]model.ChatSession, 
 }
 
 func (s *chatService) GetSessionHistory(ctx context.Context, sessionID uuid.UUID) ([]model.ChatMessage, error) {
-
 	messages, err := s.redisRepo.GetMessages(ctx, sessionID)
 	if err == nil && len(messages) > 0 {
 		return messages, nil
@@ -69,6 +68,13 @@ func (s *chatService) GetSessionHistory(ctx context.Context, sessionID uuid.UUID
 		return nil, err
 	}
 
+	if len(messages) > 0 {
+		ttl := time.Duration(s.cfg.CacheTTLSeconds) * time.Second
+		for i := range messages {
+			_ = s.redisRepo.SaveMessage(ctx, sessionID, &messages[i], ttl)
+		}
+	}
+
 	return messages, nil
 }
 
@@ -77,7 +83,7 @@ func (s *chatService) StreamChatMessage(ctx context.Context, sessionID uuid.UUID
 
 	userMsg := &model.ChatMessage{
 		SessionID: sessionID,
-		Role:      "user",
+		Role:      model.RoleUser,
 		Content:   userContent,
 		CreatedAt: time.Now(),
 	}
@@ -141,7 +147,7 @@ func (s *chatService) StreamChatMessage(ctx context.Context, sessionID uuid.UUID
 
 	assistantMsg := &model.ChatMessage{
 		SessionID: sessionID,
-		Role:      "assistant",
+		Role:      model.RoleAssistant,
 		Content:   fullAssistantResponse.String(),
 		CreatedAt: time.Now(),
 	}

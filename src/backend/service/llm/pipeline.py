@@ -37,7 +37,7 @@ async def get_relevant_context_async(query: str, limit: int = 3) -> str:
     async with engine.connect() as conn:
         sql = text("""
             SELECT content 
-            FROM knowledge_documents 
+            FROM document_chunks 
             ORDER BY embedding <=> :vector::vector 
             LIMIT :limit;
         """)
