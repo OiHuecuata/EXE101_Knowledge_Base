@@ -41,3 +41,9 @@ migrate-up:
 
 ui:
 	cd src/frontend && npm run dev
+
+py:
+	PYTHONPATH=src poetry run python src/backend/service/llm/server.py
+
+golang:
+	go run src/backend/main.go
