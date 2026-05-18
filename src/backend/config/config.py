@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     DB_PORT: int = Field(default=5432, validation_alias="DB_PORT")
     DB_USER: str = Field(default="postgres", validation_alias="DB_USER")
     DB_PASSWORD: str = Field(default="", validation_alias="DB_PASSWORD")
-    DB_NAME: str = Field(default="exe101", validation_alias="DB_NAME")
+    DB_NAME: str = Field(default="exe101_db", validation_alias="DB_NAME")
     DB_URL: Optional[str] = Field(default=None, validation_alias="DB_URL")
 
     # REDIS CACHE
