@@ -16,7 +16,7 @@ packages:
 	poetry install --no-root
 
 tree:
-	tree -I "EXE101|processed"
+	tree -I "EXE101|processed|node_modules"
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
