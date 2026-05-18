@@ -2,100 +2,85 @@ package config
 
 import (
 	"log"
-	"os"
-	"strconv"
+	"strings"
 
-	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 )
 
 type Config struct {
-
 	// DB Config
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	DBURL      string
+	DBHost     string `mapstructure:"DB_HOST"`
+	DBPort     string `mapstructure:"DB_PORT"`
+	DBUser     string `mapstructure:"DB_USER"`
+	DBPassword string `mapstructure:"DB_PASSWORD"`
+	DBName     string `mapstructure:"DB_NAME"`
+	DBURL      string `mapstructure:"DB_URL"`
 
 	// Redis Config
-	RedisHost     string
-	RedisPort     string
-	RedisPassword string
-	DBRedis       string
+	RedisHost     string `mapstructure:"REDIS_HOST"`
+	RedisPort     string `mapstructure:"REDIS_PORT"`
+	RedisPassword string `mapstructure:"REDIS_PASSWORD"`
+	DBRedis       int    `mapstructure:"DB_REDIS"`
 
 	// API Key
-	OpenRouterAPIKey  string
-	OpenRouterBaseURL string
-	LLMModelName      string
-	LLMTemperature    float64
-	LLMMaxTokens      int
+	OpenRouterAPIKey  string  `mapstructure:"OPENROUTER_API_KEY"`
+	OpenRouterBaseURL string  `mapstructure:"OPENROUTER_BASE_URL"`
+	LLMModelName      string  `mapstructure:"LLM_MODEL_NAME"`
+	LLMTemperature    float64 `mapstructure:"LLM_TEMPERATURE"`
+	LLMMaxTokens      int     `mapstructure:"LLM_MAX_TOKENS"`
 
 	// HuggingFace
-	HFToken            string
-	EmbeddingModelName string
+	HFToken            string `mapstructure:"HF_TOKEN"`
+	EmbeddingModelName string `mapstructure:"EMBEDDING_MODEL_NAME"`
 
 	// Application
-	AppEnv              string
-	AppPort             string
-	PythonLLMServiceURL string
-	CacheTTLSeconds     int
+	AppEnv              string `mapstructure:"APP_ENV"`
+	AppPort             string `mapstructure:"APP_PORT"`
+	PythonLLMServiceURL string `mapstructure:"PYTHON_LLM_SERVICE_URL"`
+	CacheTTLSeconds     int    `mapstructure:"CACHE_TTL_SECONDS"`
 }
 
 func LoadConfig() *Config {
+	viper.SetConfigName(".env")
+	viper.SetConfigType("env")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("./src/backend")
 
-	if err := godotenv.Load(); err != nil {
-		log.Println("Warning: No .env file found, using system environment variables")
+	// Environment Variables
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	if err := viper.ReadInConfig(); err != nil {
+		log.Println("Warning: No .env file found, relying on system environment variables")
 	}
 
-	return &Config{
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		DBUser:     getEnv("DB_USER", "postgres"),
-		DBPassword: getEnv("DB_PASSWORD", ""),
-		DBName:     getEnv("DB_NAME", "exe101_db"),
-		DBURL:      getEnv("DB_URL", ""),
+	// Default
+	setDefaults()
 
-		RedisHost:     getEnv("REDIS_HOST", "localhost"),
-		RedisPort:     getEnv("REDIS_PORT", "6379"),
-		RedisPassword: getEnv("REDIS_PASSWORD", ""),
-		DBRedis:       getEnv("DB_REDIS", "0"),
-
-		OpenRouterAPIKey:  getEnv("OPENROUTER_API_KEY", ""),
-		OpenRouterBaseURL: getEnv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
-		LLMModelName:      getEnv("LLM_MODEL_NAME", ""),
-		LLMTemperature:    getFloat("LLM_TEMPERATURE", 0.1),
-		LLMMaxTokens:      getInt("LLM_MAX_TOKENS", 2048),
-
-		HFToken:            getEnv("HF_TOKEN", ""),
-		EmbeddingModelName: getEnv("EMBEDDING_MODEL_NAME", "BAAI/bge-m3"),
-
-		AppEnv:              getEnv("APP_ENV", "development"),
-		AppPort:             getEnv("APP_PORT", "8080"),
-		PythonLLMServiceURL: getEnv("PYTHON_LLM_SERVICE_URL", "http://localhost:5000"),
-		CacheTTLSeconds:     getInt("CACHE_TTL_SECONDS", 3600),
+	var config Config
+	if err := viper.Unmarshal(&config); err != nil {
+		log.Fatalf("Unable to decode into struct, %v", err)
 	}
+
+	return &config
 }
 
-func getEnv(key, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return defaultValue
-}
+func setDefaults() {
+	viper.SetDefault("APP_ENV", "development")
+	viper.SetDefault("APP_PORT", "8080")
 
-func getInt(name string, defaultValue int) int {
-	valueStr := getEnv(name, "")
-	if value, err := strconv.Atoi(valueStr); err == nil {
-		return value
-	}
-	return defaultValue
-}
+	viper.SetDefault("DB_HOST", "localhost")
+	viper.SetDefault("DB_PORT", "5432")
+	viper.SetDefault("DB_USER", "postgres")
+	viper.SetDefault("DB_NAME", "exe101_db")
 
-func getFloat(name string, defaultValue float64) float64 {
-	valueStr := getEnv(name, "")
-	if value, err := strconv.ParseFloat(valueStr, 64); err == nil {
-		return value
-	}
-	return defaultValue
+	viper.SetDefault("REDIS_HOST", "localhost")
+	viper.SetDefault("REDIS_PORT", "6379")
+	viper.SetDefault("DB_REDIS", 0)
+
+	viper.SetDefault("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+	viper.SetDefault("LLM_TEMPERATURE", 0.2)
+	viper.SetDefault("LLM_MAX_TOKENS", 2048)
+	viper.SetDefault("EMBEDDING_MODEL_NAME", "BAAI/bge-base-en-v1.5")
+	viper.SetDefault("CACHE_TTL_SECONDS", 3600)
 }
