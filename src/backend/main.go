@@ -17,8 +17,22 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func main() {
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	}
+}
+
+func main() {
 	cfg := config.LoadConfig()
 
 	if cfg.AppEnv == "production" {
@@ -59,8 +73,9 @@ func main() {
 	chatHandler := handler.NewChatHandler(chatService)
 
 	r := gin.Default()
+	r.Use(corsMiddleware())
 
-	api := r.Group("/chats")
+	api := r.Group("/api/v1/chats")
 	{
 		api.POST("", chatHandler.CreateSession)
 		api.GET("", chatHandler.GetSessions)
@@ -69,8 +84,8 @@ func main() {
 	}
 
 	serverAddr := fmt.Sprintf(":%s", cfg.AppPort)
-	log.Printf("Server đang chạy ổn định tại port %s trong môi trường %s", cfg.AppPort, cfg.AppEnv)
+	log.Printf("Server running on port %s in %s environment", cfg.AppPort, cfg.AppEnv)
 	if err := http.ListenAndServe(serverAddr, r); err != nil {
-		log.Fatalf("Server dừng đột ngột: %v\n", err)
+		log.Fatalf("Server stopped unexpectedly: %v\n", err)
 	}
 }

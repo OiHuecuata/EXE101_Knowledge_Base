@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -19,7 +20,6 @@ func NewChatHandler(chatService chat.ChatService) *ChatHandler {
 	return &ChatHandler{chatService: chatService}
 }
 
-// POST /chats
 func (h *ChatHandler) CreateSession(c *gin.Context) {
 	var req struct {
 		Title string `json:"title" binding:"required"`
@@ -38,7 +38,6 @@ func (h *ChatHandler) CreateSession(c *gin.Context) {
 	c.JSON(http.StatusCreated, session)
 }
 
-// GET /chats
 func (h *ChatHandler) GetSessions(c *gin.Context) {
 	sessions, err := h.chatService.GetAllSessions(c.Request.Context())
 	if err != nil {
@@ -49,7 +48,6 @@ func (h *ChatHandler) GetSessions(c *gin.Context) {
 	c.JSON(http.StatusOK, sessions)
 }
 
-// GET /chats/:id/messages
 func (h *ChatHandler) GetMessages(c *gin.Context) {
 	idStr := c.Param("id")
 	sessionID, err := uuid.Parse(idStr)
@@ -67,7 +65,6 @@ func (h *ChatHandler) GetMessages(c *gin.Context) {
 	c.JSON(http.StatusOK, messages)
 }
 
-// POST /chats/:id/messages (Stream SSE)
 func (h *ChatHandler) StreamMessage(c *gin.Context) {
 	idStr := c.Param("id")
 	sessionID, err := uuid.Parse(idStr)
@@ -89,9 +86,7 @@ func (h *ChatHandler) StreamMessage(c *gin.Context) {
 	defer cancel()
 
 	go func() {
-		if err := h.chatService.StreamChatMessage(ctx, sessionID, req.Content, outChan); err != nil {
-			cancel()
-		}
+		_ = h.chatService.StreamChatMessage(ctx, sessionID, req.Content, outChan)
 	}()
 
 	c.Header("Content-Type", "text/event-stream")
@@ -107,7 +102,10 @@ func (h *ChatHandler) StreamMessage(c *gin.Context) {
 			if !ok {
 				return false
 			}
-			c.SSEvent("message", chunk)
+			_, _ = fmt.Fprintf(w, "%s\n\n", chunk)
+			if flusher, ok := w.(http.Flusher); ok {
+				flusher.Flush()
+			}
 			return true
 		}
 	})
