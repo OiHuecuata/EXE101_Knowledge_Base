@@ -1,16 +1,20 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help structure clean packages parse pipeline
+.PHONY: help tree clean packages parse pipeline migrate-down migrate-up ui
 
 export PYTHONPATH := $(shell pwd)/src
 
 help:
 	@echo "Available commands:"
-	@echo "  make help      : Show commands and how to use"
-	@echo "  make tree      : Display project structure"
-	@echo "  make clean     : Remove cache files, logs"
-	@echo "  make packages  : Install all dependencies"
-	@echo "  make parse     : Convert PPTX/DOCX to Markdown"
+	@echo "  make help          : Show commands and how to use"
+	@echo "  make tree          : Display project structure"
+	@echo "  make clean         : Remove cache files, logs"
+	@echo "  make packages      : Install all dependencies"
+	@echo "  make parse         : Convert PPTX/DOCX to Markdown"
+	@echo "  make pipeline      : Run the main pipeline"
+	@echo "  make migrate-up    : Run database migrations up"
+	@echo "  make migrate-down  : Rollback database migrations"
+	@echo "  make ui            : Run frontend development server"
 
 packages:
 	poetry install --no-root
@@ -34,3 +38,6 @@ migrate-down:
 
 migrate-up:
 	psql "$(DB_URL)" -f database/migration/init_schema.up.sql
+
+ui:
+	cd src/frontend && npm run dev
